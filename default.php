@@ -13,7 +13,7 @@
     
     <meta name="robots" content="noindex, follow">
 
-    <title>The SQLite Editor for PHP tool</title>
+    <title>SQLite Edit for PHP</title>
     
     <link rel="stylesheet" href="css/common.css" type="text/css" media="screen" />
     
@@ -33,7 +33,7 @@
 </head>
 <body>
 
-    <h1>SQLite Editor for PHP</h1>
+    <h1>SQLite Edit for PHP</h1>
 
 
     <ul>
@@ -46,7 +46,7 @@
     <a name="introduction"></a>
     <h2>Introduction</h2>
     <p>
-        SQLite Editor for PHP is a tool for providing
+        SQLite Edit for PHP is a tool for providing
         add/edit/delete interfaces to your websites users.
         The examples that are linked to below should work
         straight-away without you having to configure anything
@@ -60,8 +60,8 @@
 
     <div style="line-height: 25px; width: 75%; margin-left: auto; margin-right: auto">
 <?php
-    $editor = new SQLiteEditor([
-        'filename'  => 'examples/sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'  => 'examples/sqliteedit.db',
         'table'     => 'accounts',
         'sql_select' => 'SELECT id,
                                 forename,
@@ -107,8 +107,8 @@
 
     <pre class="code">
 &lt;?php
-    $editor = new SQLiteEditor([
-        'filename'  => 'examples/sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'  => 'examples/sqliteedit.db',
         'table'     => 'accounts',
         'sql_select' => 'SELECT id,
                                 forename,
@@ -186,7 +186,7 @@
     <a name="support"></a>
     <h2>Support</h2>
     <p>
-        If you have an issue with Sqlite Editor then please email me
+        If you have an issue with Sqlite Edit for PHP then please email me
         directly using the email address richardheyes at Google's
         popular wedbmail app.
     </p>
@@ -196,7 +196,7 @@
 
     <div>
         <div style="float: right">
-            <i><a href="https://www.rgraph.net/sqliteeditor/index.html" target="_blank" rel="nofollow">The SQLite Editor for PHP website</a></i>
+            <i><a href="https://www.rgraph.net/sqliteedit/index.html" target="_blank" rel="nofollow">The SQLite Edit for PHP website</a></i>
         </div>
     </div>
 
