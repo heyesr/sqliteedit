@@ -1,6 +1,6 @@
 <?php
     // ***************************************
-    // * SQLiteEditor for PHP                *
+    // * SQLite Edit for PHP                *
     // *                                     *
     // * This is free code - it's  released  *
     // * to the public domain (ie the same   *
@@ -9,10 +9,10 @@
     // *                                     *
     // * © Richard Heyes 2026                *
     // *                                     *
-    // * https://www.rgraph.net/sqliteeditor *
+    // * https://www.rgraph.net/sqliteedit   *
     // ***************************************
 
-    class SQLiteEditor
+    class SQLiteEdit
     {
         //
         // The ID of this instance
@@ -65,7 +65,7 @@
 
 
         //
-        // This is the unique ID for this SQLiteEditor instance
+        // This is the unique ID for this SQLiteEdit instance
         //
         public static $counter = 1;
         
@@ -180,9 +180,9 @@
 
 
             //
-            // The id is used as an anchor to this sqliteeditor
+            // The id is used as an anchor to this sqliteedit
             //
-            $this->id = 'editor' . SQLiteEditor::$counter++;
+            $this->id = 'editor' . SQLiteEdit::$counter++;
 
 
             // If the order_dir is equal to one then change to be empty
@@ -1119,7 +1119,61 @@ echo '
 <script>
     $a = alert;
     $c = console.log;
-    
+
+    //
+    // A function to escape HTML characters
+    //
+    // @param enabled bool Whether to actually do anything or just
+    //                     return the string as-is.
+    //
+    String.prototype.encodeHTML = function (enabled = true)
+    {
+        if (enabled === false) {
+            return this;
+        }
+
+        var map =
+        {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "\'": "&#039;"
+        };
+
+        return this.replace(/[&<>"\']/g, function(m) {return map[m];});
+    };
+
+
+
+
+
+
+
+
+    //
+    // A function to unescape HTML characters
+    //
+    // @param enabled bool Whether to actually do anything or just
+    //                     return the string as-is.
+    //
+    String.prototype.decodeHTML = function (enabled = true)
+    {
+        if (enabled === false) {
+            return this;
+        }
+        var map =
+        {
+            "&amp;": "&",
+            "&lt;": "<",
+            "&gt;": ">",
+            "&quot;": "\"",
+            "&#039;": "\""
+        };
+        
+        return this.replace(/&amp;|&lt;|&gt;|&quot;|&#039;/g, function(m) {return map[m];});
+    }
+
     // This "Registry"-style object is a container for all of
     // the editor objects that are created so that each can be
     // accessed correctly. It stops earlier editors using
@@ -1787,6 +1841,7 @@ echo '
             editable_view_only:              ' . JSON_encode($this->options['editable_view_only']) . ',
             editable_types:                  ' . JSON_encode($this->options['editable_types']) . ',
             columns_names:                   ' . JSON_encode($this->options['columns_names']) . ',
+            columns_escape:                  ' . JSON_encode($this->options['columns_escape']) . ',
             database_selected_columns:       ' . JSON_encode($this->database_selected_columns) . '
         };
 
@@ -2102,7 +2157,7 @@ echo '
 
             html += `
 <tr>
-    <td width="1" align="right" valign="top">${properties.columns_names[column] || column}:</td>
+    <td width="1" align="right" valign="top">${(properties.columns_names[column] || column).encodeHTML(properties.columns_escape[column])}:</td>
     <td>${input_str || ""}</td>
 </tr>
 `;
