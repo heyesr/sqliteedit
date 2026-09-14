@@ -1,7 +1,7 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('An editable demo using a select which has been populated by an SQL query');
@@ -12,13 +12,13 @@
     retrieved by an SQL query.
 </p>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
     
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
         'sql_select'    => "SELECT id,
                                    username,
@@ -55,7 +55,7 @@
     
     $editor->draw();
 ?>
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();

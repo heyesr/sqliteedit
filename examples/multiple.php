@@ -1,21 +1,21 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('Multiple editors on one page');
 ?>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
 
     echo '<h2>First editor</h2>';
 
-    $editor1 = new SQLiteEditor([
-        'filename'       => './sqliteeditor.db',
+    $editor1 = new SQLiteEdit([
+        'filename'       => './sqliteedit.db',
         'table'          => 'accounts',
         'editable'       => [
             'username' => true,
@@ -40,8 +40,8 @@
 
     echo '<h2>Second editor</h2>';
     
-    $editor2 = new SQLiteEditor([
-        'filename'     => './sqliteeditor.db',
+    $editor2 = new SQLiteEdit([
+        'filename'     => './sqliteedit.db',
         'table'        => 'accounts',
         'editable'     => [
             'forename' => true,
@@ -69,8 +69,8 @@
 
     echo '<h2>Third editor</h2>';
     
-    $editor3 = new SQLiteEditor([
-        'filename'       => './sqliteeditor.db',
+    $editor3 = new SQLiteEdit([
+        'filename'       => './sqliteedit.db',
         'table'          => 'accounts',
         'editable'       => [
             'username' => true,
@@ -109,8 +109,8 @@
 
     echo '<h2>Fourth editor</h2>';
     
-    $editor4 = new SQLiteEditor([
-        'filename'       => './sqliteeditor.db',
+    $editor4 = new SQLiteEdit([
+        'filename'       => './sqliteedit.db',
         'table'          => 'accounts',
         'editable'       => [
             'username' => true,
@@ -130,7 +130,7 @@
     
     $editor4->draw();
 ?>
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();

@@ -1,14 +1,14 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('An example of setting a password');
 ?>
 
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <script>
     //
     // This is the dialog that pops up asking the user to change a
@@ -79,10 +79,10 @@
 
 <div style="width: 500px; margin-left: auto; margin-right: auto">
 <?php
-    require_once('../SQLiteEditor.php');
+    require_once('../SQLiteEdit.php');
 
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'passwords',
         'sql_insert'    => false,
         'sql_delete'    => false,
@@ -129,7 +129,7 @@
     $editor->draw();
 ?>
 </div>
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();

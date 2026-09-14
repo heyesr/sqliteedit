@@ -1,7 +1,7 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('A demo with action buttons');
@@ -22,14 +22,14 @@
     used.
 </p>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <div>
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
 
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
         'columns_names' => [
             'id'       => 'ID',
@@ -37,9 +37,6 @@
             'forename' => 'Forename',
             'surname'  => 'Surname',
             'created'  => 'Created'
-        ],
-        'columns_widths' => [
-            'id' => 50
         ],
         'actions' => [
             '<button type="button" onclick="alert(`You clicked me!`)">Click me!</button>',
@@ -65,8 +62,8 @@
 
 
 
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
         'columns_names' => [
             'id'       => 'ID',
@@ -74,9 +71,6 @@
             'forename' => 'Forename',
             'surname'  => 'Surname',
             'created'  => 'Created'
-        ],
-        'columns_widths' => [
-            'id' => 50
         ],
         'sql_delete' => false,
         'sql_insert' => false,
@@ -98,7 +92,7 @@
     echo '<p>&nbsp;</p>';
 ?>
 </div>
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();

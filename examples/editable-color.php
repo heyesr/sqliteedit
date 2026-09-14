@@ -1,7 +1,7 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('An editable demo using a color selector');
@@ -13,26 +13,29 @@
     doesn't affect the editing of the column though.
 </p>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
     
-    $editor = new SQLiteEditor([
+    $editor = new SQLiteEdit([
 
-        'filename'      => './sqliteeditor.db',
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
 
         'sql_select'    => "SELECT id, username, forename, surname FROM accounts WHERE {where} {order}",
         'columns_names' => [
             'id'       => 'ID',
-            'username' => 'Favourite color',
+            'username' => 'Favourite&nbsp;color',
             'forename' => 'Forename',
             'surname'  => 'Surname'
         ],
         'columns_widths' => [
             'id' => 50,
             '*' => 250
+        ],
+        'columns_escape' => [
+            'username' => false
         ],
         'editable'  => [
             'username' => true
@@ -47,7 +50,7 @@
     
     $editor->draw();
 ?>
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();

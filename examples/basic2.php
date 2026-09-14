@@ -1,7 +1,7 @@
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
-    require_once('../SQLiteEditor.php');
+    require_once('../SQLiteEdit.php');
 ?>
 <html>
 <body>
@@ -9,8 +9,8 @@
     <h1>An example with nothing but the editor</h1>
 
 <?php
-    $editor1 = new SQLiteEditor([
-        'filename'       => './sqliteeditor.db',
+    $editor1 = new SQLiteEdit([
+        'filename'       => './sqliteedit.db',
         'table'          => 'accounts',
         'search_columns' => ['username','forename','surname'],
         'paging_perpage' => 10,

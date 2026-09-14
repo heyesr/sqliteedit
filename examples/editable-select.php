@@ -1,7 +1,7 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('An editable demo using a select');
@@ -29,11 +29,11 @@
     separated list of the options that you wish to see in the
     dropdown and also an SQL query which fetches the list of items
     that appear in the dropdown list. See
-    <a href="https://www.rgraph.net/sqliteeditor/api.html#property-name-editable_types_select_options">the documentation</a> for the
+    <a href="https://www.rgraph.net/SQLiteEdit/api.html#property-name-editable_types_select_options">the documentation</a> for the
     exact details of the format to use.
 </p>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <script>
     function fetchUsernames(column)
     {
@@ -43,12 +43,12 @@
 
 <div style="width: 800px; margin-left: auto; margin-right: auto">
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
 
     
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
         'sql_select'    => "SELECT id,
                                    username,
@@ -61,12 +61,16 @@
         'columns_names' => [
             'id'       => 'ID',
             'username' => 'Username',
-            'forename' => 'First name',
-            'surname'  => 'Second name',
+            'forename' => 'First&nbsp;name',
+            'surname'  => 'Second&nbsp;name',
             'created'  => 'Created'
         ],
         'columns_widths' => [
             'id' => 50
+        ],
+        'columns_escape' => [
+            'forename' => false,
+            'surname' => false
         ],
         'editable' => [
             'username' => true,
@@ -94,7 +98,7 @@
 ?>
 </div>
 
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();

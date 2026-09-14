@@ -1,7 +1,7 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('An editable demo using a textarea');
@@ -17,14 +17,14 @@
     throw off the column sizes in the table.
 </p>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <div style="width: 75%; margin-left: auto; margin-right: auto">
 <?php    
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
 
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
         'sql_select'    => 'SELECT id,
                                    username,
@@ -70,7 +70,7 @@
     $editor->draw();
 ?>
 </div>
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 
 <?php

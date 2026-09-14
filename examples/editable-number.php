@@ -1,7 +1,7 @@
 <?php
     require('../common.php');
     
-    $sqle = new SQLiteEditorDownload();
+    $sqle = new SQLiteEditDownload();
     
     $sqle->header();
     $sqle->heading('An editable demo using a number input');
@@ -11,13 +11,13 @@
     The username column is set to use a number input type.
 </p>
 
-<SQLiteEditor::source>
+<SQLiteEdit::source>
 <?php
-    // Include the SQLiteEditor.php file at the top of the
+    // Include the SQLiteEdit.php file at the top of the
     // page  before any output is sent to the browser.
 
-    $editor = new SQLiteEditor([
-        'filename'      => './sqliteeditor.db',
+    $editor = new SQLiteEdit([
+        'filename'      => './sqliteedit.db',
         'table'         => 'accounts',
         'sql_select'    => "SELECT id, username, forename, surname, created FROM accounts WHERE {where} {order}",
         'columns_names' => [
@@ -45,7 +45,7 @@
     $editor->draw();
 ?>
 
-</SQLiteEditor::source>
+</SQLiteEdit::source>
 
 <?php
     $sqle->source();
