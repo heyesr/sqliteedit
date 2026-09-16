@@ -2197,6 +2197,18 @@ echo '
             className: "editor-edit-row-popup"
         });
 
+        setTimeout(function ()
+        {
+            var popup = document.querySelector("#editor-edit-row-popup-dialog");
+        
+            // Big edit window so cap the height
+            if (popup.offsetHeight >= window.innerHeight) {
+                popup.style.top    = "5vh";
+                popup.style.height = "calc(85vh)";
+            }
+        }, 100);
+
+
 
 
 
