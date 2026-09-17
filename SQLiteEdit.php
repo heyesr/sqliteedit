@@ -724,7 +724,12 @@
 
                     $this->options['sql_select'] = str_ireplace(
                         '{order}',
-                        'ORDER BY' . sprintf(' %s(%s) ', ($this->options['ordering_case'] ? '': 'LOWER'), $order_column) . $order_dir,
+                        sprintf(
+                            'ORDER BY %s %s %s ',
+                            $order_column,
+                            ($this->options['ordering_case'] ? '' : 'COLLATE NOCASE'),
+                            $order_dir
+                        ),
                         $this->options['sql_select']
                     );
 
@@ -2157,7 +2162,7 @@ echo '
 
             html += `
 <tr>
-    <td width="1" align="right" valign="top">${(properties.columns_names[column] || column).encodeHTML(properties.columns_escape[column])}:</td>
+    <td width="1" align="right" valign="top">${(properties.columns_names[column] || column).encodeHTML(properties.columns_escape[column]).replace(/ /g, "&nbsp;")}:</td>
     <td>${input_str || ""}</td>
 </tr>
 `;
@@ -2203,8 +2208,8 @@ echo '
         
             // Big edit window so cap the height
             if (popup.offsetHeight >= window.innerHeight) {
-                popup.style.top    = "5vh";
-                popup.style.height = "calc(85vh)";
+                popup.style.top    = "5%";
+                popup.style.bottom = "5%";
             }
         }, 100);
 
@@ -2369,6 +2374,79 @@ echo '
             checkbox.checked = !checkbox.checked;
         } else if (radio) {
             radio.checked = !radio.checked;
+        }
+    };
+
+
+
+
+
+
+
+
+    //
+    // When a row is clicked on, this function checks or unchecks
+    // the rows between the current row being checked and the
+    // previous checked row.
+    //
+    // @param object tr The table row tag that has just been
+    //                  clicked on.
+    //
+    editor_togglebetweenrows = function (tr)
+    {
+        tr.parentNode.parentNode.onselectstart = function (e)
+        {
+            e.preventDefault();
+        };
+        
+        var e = window.event;
+        
+        if (e.shiftKey && editor_togglebetweenrows.lastrowchecked) {
+
+            var checkbox = editor_togglebetweenrows.lastrowchecked.querySelector("input[type=checkbox]");
+            var parent   = tr.parentNode;
+            var rows     = parent.querySelectorAll("tr");
+            
+            //
+            // The first checkbox clicked was BEFORE the
+            // second checkbox checked
+            //
+            if (tr.sectionRowIndex > editor_togglebetweenrows.lastrowchecked.sectionRowIndex) {
+                for (var i=0; i<rows.length; ++i) {
+                    if (rows[i].sectionRowIndex >= editor_togglebetweenrows.lastrowchecked.sectionRowIndex
+                        && rows[i].sectionRowIndex <= tr.sectionRowIndex) {
+                        rows[i].querySelector("input[type=checkbox]").checked = checkbox.checked;
+                    }
+                }
+            
+            
+            //
+            // The first checkbox clicked was AFTER the
+            // second checkbox checked
+            //
+            } else {
+                for (var i=0; i<rows.length; ++i) {
+                    if (rows[i].sectionRowIndex <= editor_togglebetweenrows.lastrowchecked.sectionRowIndex
+                        && rows[i].sectionRowIndex >= tr.sectionRowIndex) {
+                        rows[i].querySelector("input[type=checkbox]").checked = checkbox.checked;
+                    }
+                }
+            }
+
+
+            // Enable selection again
+            //
+            setTimeout(function (e)
+            {
+                tr.parentNode.parentNode.onselectstart = function (e)
+                {
+                };
+            }, 100);
+
+            // No shift key pressed - so record the last row that
+            // was selected.
+        } else {
+            editor_togglebetweenrows.lastrowchecked = tr;
         }
     };
 
@@ -2655,13 +2733,13 @@ echo '
                 //
                 // Add the data to the table
                 //
-                $html .= '<tr data-index="' . $row[$this->options['primary_key']] . '" onclick="editor_togglerow(this)">';
+                $html .= '<tr data-index="' . $row[$this->options['primary_key']] . '" onclick="editor_togglerow(this); editor_togglebetweenrows(this)">';
                 
                 // Add the checkbox at the start of the row if
                 // necessary
                 if (!empty($this->options['sql_delete']) OR !empty($this->options['checkboxes'])) {
                     $html .= '<td class="checkbox-table-cell" data-row-index="' . $row[$this->options['primary_key']] . '" width="30" style="text-align: center">
-                              <input type="' . ($this->options['checkboxes_radio'] ? 'radio' : 'checkbox') . '" onclick="event.stopPropagation()" name="' . $this->qs('delete') . '[]" value="' . $row[$this->options['primary_key']] . '" />
+                              <input type="' . ($this->options['checkboxes_radio'] ? 'radio' : 'checkbox') . '" onclick="event.stopPropagation(); editor_togglebetweenrows(this.parentNode.parentNode)" name="' . $this->qs('delete') . '[]" value="' . $row[$this->options['primary_key']] . '" />
                               </td>';
                 }
                     
