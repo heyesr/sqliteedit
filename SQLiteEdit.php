@@ -149,6 +149,7 @@
                 'paging_info_colspan'               => 999,
                 'search'                            => true,
                 'search_columns'                    => null,
+                'search_callback'                   => null,
                 'ordering_column'                   => null,
                 'ordering_dir'                      => null,
                 'ordering_include'                  => null,
@@ -869,11 +870,14 @@
                 $clauses        = [];
                 $terms          = preg_split('/\s+/', trim($_GET[$this->qs('search')]));
                 $columns        = $this->getSearchColumns();
-                $concat         = 'LOWER(IFNULL(' . implode(",'') || IFNULL(", $columns) . ",''))";
+                $concat         = 'LOWER(IFNULL(' . implode(",'') || ' ' || IFNULL(", $columns) . ",''))";
                 $not            = false;
-                
-                
-                
+
+                // Call the search callback
+                if (is_callable($this->options['search_callback'])) {
+                    ($this->options['search_callback'])($this, $columns, $terms);
+                }
+
                 foreach ($terms as $t) {
                     // If this is a negated search expression then
                     // the NOT keyword should preced the GLOB
@@ -2861,9 +2865,18 @@ No rows were selected!<br />
             return false;
         }
         
+        var checked = editor_getchecked(id);
+        
+        // Tailor the message based on how many rows are checked
+        if (checked.length > 1) {
+            var message = `Are you sure that you want to <b>delete</b> the <b>${checked.length}</b> selected rows?<br />`;
+        } else {
+            var message = "Are you sure that you want to <b>delete</b> that row?<br />";
+        }
+
 
         editor_modal.show(`
-Are you sure that you want to <b>delete</b> the selected row(s)?<br />
+${message}
 
 <p style="float: right; margin-bottom: 0">
     <button type="button" id="editor-deleterowsmodal-ok" onclick="document.forms[\'editor_delete_form_\' + editor_confirmdeleterows.id].submit();">OK</button>
@@ -3026,7 +3039,7 @@ Are you sure that you want to add a new row?<br />
         {
             $columns = [];
             
-            IF (is_array($this->options['search_columns'])) {
+            if (is_array($this->options['search_columns'])) {
                 foreach ($this->options['search_columns'] as $k => $v) {
                     if (is_numeric($k)) {
                         $columns[] = $v;
