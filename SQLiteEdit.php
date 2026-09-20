@@ -50,6 +50,12 @@
 
 
         //
+        // The database object.
+        //
+        public $db;
+
+
+        //
         // The options that are givwen to the constructor that
         // determine the way that the editor behaves. 
         //
@@ -243,18 +249,19 @@
             //
             // Open the database.
             //
-            $this->sqlite = new SQLite3($this->database_file);
+//$this->sqlite = new SQLite3($this->database_file);
+$this->db = editor_database::open($this->database_file);
 
             //
             // Determine the columns that make up the table
             //
-            $columns = [];
-            $result = $this->sqlite->query('PRAGMA table_info(' . $this->database_table . ')');
-            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-                $columns[] = $row['name'];
-            }
-            $this->database_columns = $columns;
-            
+            $this->database_columns = $this->db->column(sprintf(
+                    "PRAGMA table_info(%s)",
+                    $this->database_table
+                ),
+                'name'
+            );
+
             //
             // Now get the fulll structure of the table
             //
@@ -271,16 +278,17 @@
 
             //
             // Determine the primary key field by looking at the
-            // pragma.
+            // pragma information.
             //
             if (empty($this->options['primary_key'])) {
 
-                $rows   = array();
-                $result = $this->sqlite->query($sql = 'pragma table_info(' . $this->database_table . ')');
-    
-                while($row = $result->fetchArray(SQLITE3_ASSOC)) {
-                    $row;
-
+                $result = $this->db->query(sprintf(
+                        "PRAGMA table_info('%s')",
+                        $this->database_table
+                    )
+                );
+                
+                while($row = $this->db->fetchRow($result)) {
                     if ($row['pk']) {
                         $this->options['primary_key'] = $row['name'];
                     }
@@ -393,10 +401,16 @@
         
                                 // Run the SQL query to update the
                                 // database.
-                                $this->sqlite->enableExceptions(true);
+                                //
+                                // **********************************
+                                // * This is now done automatically *
+                                // * on the editor_database object. *
+                                // **********************************
+                                //
+//$this->sqlite->enableExceptions(true);
 
                                 try {
-                                    $result = $this->sqlite->query($sql);
+                                    $result = $this->db->query($sql);
                                 } catch (Exception $e) {
                                     $sqliteErrorMessages[] = $e->getMessage();
                                 }
@@ -437,12 +451,14 @@
                 foreach ($this->options[$p] as $k => $v){
                     if (gettype($this->options[$p][$k]) === 'string' AND preg_match('|^\s*sql\s*:|', $this->options[$p][$k])) {
                         $query   = preg_replace('|^\s*sql\s*:|','',$this->options[$p][$k]);
-                        $result  = $this->sqlite->query($query);
-                        $results = [];
-                        
-                        while($row = $result->fetchArray()) {
-                            $results[] = $row[0];
-                        }
+    
+$results  = $this->db->column($query);
+//$result  = $this->sqlite->query($query);
+//$results = [];
+
+//while($row = $result->fetchArray()) {
+//    $results[] = $row[0];
+//}
                         
                         $this->options[$p][$k] = $results;
                     }
@@ -464,12 +480,13 @@
 
                 } else if (is_string($this->options['sql_insert']) AND $this->options['sql_insert']) {
 
-                    $this->sqlite->enableExceptions(true);
+//$this->sqlite->enableExceptions(true);
                     $sqliteErrorMessage = false;
 
                     try {
 
-                        $result = $this->sqlite->query($this->options['sql_insert']);
+//$result = $this->sqlite->query($this->options['sql_insert']);
+$result = $this->db->query($this->options['sql_insert']);
                     }catch (Exception $e) {
                         $sqliteErrorMessage = $e->getMessage();
                     }
@@ -515,9 +532,9 @@
                         
                         // If any of the submitted IDs are not numeric
                         // then quote them.
-                        foreach ($ids AS &$v) {
+                        foreach ($ids as &$v) {
                             if (!is_numeric($v)) {
-                                $v = "'" . $this->sqlite->escapeString($v) . "'";
+                                $v = $this->db->quote($v);
                             }
                         }
 
@@ -526,11 +543,12 @@
                         $sql = str_ireplace('LIMIT {count}', 'LIMIT ' . count($ids), $sql);
                         $sql = str_ireplace('{primary_key}',$this->options['primary_key'], $sql);
 
-                        $this->sqlite->enableExceptions(true);
+//$this->sqlite->enableExceptions(true);
                         $sqliteErrorMessage = false;
 
                         try {
-                            $result = $this->sqlite->query($sql);
+//$result = $this->sqlite->query($sql);
+$result = $this->db->query($sql);
                         }catch (Exception $e) {
                             $sqliteErrorMessage = $e->getMessage();
                         }
@@ -538,7 +556,8 @@
 
                         
                         if (!$sqliteErrorMessage) {
-                            $affected = $this->sqlite->changes();
+//$affected = $this->sqlite->changes();
+$affected = $this->db->changes();
                             editor_messages::success($this->id, $affected > 1 ? $affected . ' rows were deleted' : 'That row was deleted');
                         } else {
                             editor_messages::error($this->id, 'The delete failed (SQLite said: ' . $sqliteErrorMessage . ').');
@@ -771,13 +790,28 @@
         //
         public function getStructure ()
         {
-            $result  = $this->sqlite->query("pragma table_info({$this->database_table})");
-            $rows = [];
-            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-                $rows [] = $row;
-            }
-            $this->structure = $rows;
+$result = $this->db->all(
+    sprintf(
+        "PRAGMA table_info(%s)",
+        $this->database_table
+    )
+);
+
+//$result  = $this->sqlite->query("pragma table_info({$this->database_table})");
+//$rows = [];
+//while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+//    $rows [] = $row;
+//}
+
+$this->structure = $result;
         }
+
+
+
+
+
+
+
 
         //
         // Builds the default insert query based on the structure.
@@ -906,10 +940,11 @@
             //
             // Run the SQL query to update the
             // database.
-            $this->sqlite->enableExceptions(true);
+//$this->sqlite->enableExceptions(true);
             
             try {
-                $result = $this->sqlite->query($sql);
+//$result = $this->sqlite->query($sql);
+$result = $this->db->query($sql);
             } catch (Exception $e) {
                 $sqliteErrorMessage = $e->getMessage();
             }
@@ -946,7 +981,9 @@
 
 
 
+            //
             // Generate the paging links here
+            //
             $paging_numpages = ceil($unpaged_numrows / $this->options['paging_perpage']);
             $this->options['paging_numpages'] = $paging_numpages;
             $paging_page_numbers_string = '';
@@ -1027,11 +1064,33 @@
                 }
             }
 
+
             // Now convert the array of page numbers into a
             // string.
             for ($i=0; $i<count($paging_page_numbers_array); ++$i) {
                 $paging_page_numbers_string .= $paging_page_numbers_array[$i][1];
             }
+
+
+// Add the triangles
+if ($this->options['paging_current'] > 1) {
+    $url = new editor_url($_SERVER['REQUEST_URI']);
+        $url->removequerystringparameter($this->qs('paging'));
+        $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] - 1);
+        $url->setanchor($this->id);
+    $u = $url->get();
+    $paging_page_numbers_string = '<span id="paging-prev-page-arrow"><a href="' . $u . '">&#9664;</a></span> ' . $paging_page_numbers_string;
+}
+
+if ($this->options['paging_current'] < $paging_numpages) {
+    $url = new editor_url($_SERVER['REQUEST_URI']);
+        $url->removequerystringparameter($this->qs('paging'));
+        $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] + 1);
+        $url->setanchor($this->id);
+    $u = $url->get();
+    $paging_page_numbers_string .= ' <span id="paging-next-page-arrow"><a href="' . $u . '">&#9654;</a></span>';
+}
+
 
             if ($this->options['paging_numpages'] > 10) {
                 $paging_page_numbers_string .= '<a href="" onclick="event.preventDefault();editor_objects[`' . $this->id . '`].editor_showallpagenumbers(event, `' . $this->id . '`,' . $this->options['paging_numpages'] .'); return false">...</a>';
@@ -1048,10 +1107,11 @@
             $sql .= $limit;
 
 
-            $this->sqlite->enableExceptions(true);
+//$this->sqlite->enableExceptions(true);
             
             try {
-                $result = $this->sqlite->query($sql);
+//$result = $this->sqlite->query($sql);
+$result = $this->db->query($sql);
             } catch (Exception $e) {
                 $sqliteErrorMessage = $e->getMessage();
             }
@@ -2851,7 +2911,8 @@ echo '
         //
         // Dont do anything if no rows are checked
         //
-        var selected = editor_getchecked();
+        var selected = editor_getchecked(id);
+
         if (selected.length < 1) {
             editor_modal.show(`
 No rows were selected!<br />
@@ -3239,6 +3300,245 @@ Are you sure that you want to add a new row?<br />
         }
     }
 
+
+
+
+
+
+
+
+    class editor_database
+    {
+        // The "connection" to the database
+        public $sqlite;
+
+        //
+        // Opens the database. In the case of sqlite just give it
+        // the database path.
+        //
+        // @param string $filename The path to the database.
+        //
+        public static function open ($filename)
+        {
+            $db         = new editor_database();
+            $db->sqlite = new SQLite3($filename);
+            $db->enableExceptions();
+            
+            return $db;
+        }
+
+
+
+
+
+
+
+
+        //
+        // Runs a query and returns the result.
+        //
+        // @param  string $sql The query to run.
+        // @return object      The result object for the SQL query.
+        //
+        public function query ($sql)
+        {
+            $result = $this->sqlite->query($sql);
+
+            return $result;
+        }
+
+
+
+
+
+
+
+
+        //
+        // Fetchesa single row of data from a resultset.
+        //
+        // @param object $result The result that is returned from
+        //                       the query method.
+        // @param int $mode      How to index the results - numerically
+        //                       or (the default) asociatively.
+        // @return array         The next row in the resultset.
+        //
+        public function fetchRow ($result, $mode = SQLITE3_ASSOC)
+        {
+            $row = $result->fetchArray($mode);
+
+            return $row;
+        }
+
+
+
+
+
+
+
+
+        //
+        // Escapes a string. This function DOES NOT surround the string
+        // with quotes. For that you'll need the  quote() function below.
+        //
+        // @param  string $str The string to escape.
+        // @return string      The escaped string.
+        //
+        public function escape ($str)
+        {
+            return SQLite3::escapeString($str); // (WITHOUT enclosing quotes;
+        }
+
+
+
+
+
+
+
+
+        //
+        // Escapes a string and surrounds it with quotes.
+        //
+        // @param  string $str The string to escape and quote.
+        // @return string      The escaped and quoted string.
+        //
+        public function quote ($str)
+        {
+            return "'" . $this->escape($str) . "'"; // (WITH enclosing quotes
+        }
+
+
+
+
+
+
+
+
+        //
+        // Enables exceptions.
+        //
+        // @return ???
+        //
+        public function enableExceptions ()
+        {
+            return $this->sqlite->enableExceptions(true);
+        }
+
+
+
+
+
+
+
+
+        //
+        // Returns the number of affected rows by the last update
+        // query.
+        //
+        // @return The number of affected rows.
+        //
+        public function changes ()
+        {
+            return $this->sqlite->changes();
+        }
+
+
+
+
+
+
+
+
+        //
+        // This function returns a row of data.
+        //
+        // @param string $sql The SQL query to run and get a
+        //                    row of results for.
+        // @return array      The results of the query.
+        //
+        public function row($sql, $index = 0)
+        {
+            $result = $this->sqlite->query($sql);
+
+            if ($result) {
+
+                $i = 0;
+                while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                    if ($i === $index) {
+                        return $row;
+                    }
+                    
+                    $i++;
+                }
+            }
+            
+            return false;
+        }
+
+
+
+
+
+
+
+
+        //
+        // This function returns a column of data.
+        //
+        // @param string $sql The SQL query to run and get a
+        //                    column of results for.
+        // @return array      The results of the query.
+        //
+        public function column($sql, $index = 0)
+        {
+            $result = $this->query($sql);
+            $ret    = [];
+            
+            if ($result) {
+                while ($row = $result->fetchArray(SQLITE3_BOTH)) {
+                    $ret[] = isset($row[$index]) ? $row[$index] : null;
+                }
+                
+                return $ret;
+            }
+            
+            return false;
+        }
+
+
+
+
+
+
+
+
+        //
+        // This function returns all of the data.
+        //
+        // @param string $sql The SQL query to run and get all of
+        //                    the results for.
+        // @return array      The results of the query.
+        public function all($sql)
+        {
+
+            $result = $this->query($sql);
+            $ret = [];
+            
+            if ($result) {
+                while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                    $ret[] = $row;
+                }
+                
+                return $ret;
+            }
+            
+            return false;
+        }
+
+
+
+
+    } // End of Database class
 
 
 
