@@ -51,7 +51,6 @@
             'div.editor table tr td[data-column-name=created] div {color:gray; text-align: center; font-style: italic;}',
             'div.editor :where(button, input) {font-size: 16pt;}',
             'div.editor input[type=checkbox]{cursor: pointer;transform:scale(1.5) !important;}'
-            
         ]
     ]);
     

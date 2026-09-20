@@ -53,9 +53,10 @@
                 return rtrim(substr($value ? $value : '', 0, 20)) . (strlen($value ? $value : '') > 15 ? '...' : '');
             }
         ],
+        'paging_perpage' => 5,
         'style' => [
             'div.editor-container-editor2 table {width: 75%;margin-left: auto; margin-right: auto;}'
-        ]
+        ]       
     ]);
     
     $editor2->draw();
