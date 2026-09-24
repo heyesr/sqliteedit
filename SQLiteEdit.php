@@ -1059,9 +1059,9 @@
                         $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] - 1);
                         $url->setanchor($this->id);
                     $u = $url->get();
-                    $paging_page_numbers_string = '<span id="paging-prev-page-arrow"><a href="' . $u . '">&#9664;</a></span> ' . $paging_page_numbers_string;
+                    $paging_page_numbers_string = '<span id="paging-prev-page-arrow"><a href="' . $u . '">&#9664;</a></span>&nbsp;&nbsp;' . $paging_page_numbers_string;
                 } else {
-                    $paging_page_numbers_string = '<span id="paging-prev-page-arrow" style="opacity: 0.15">&#9664;</span> ' . $paging_page_numbers_string;
+                    $paging_page_numbers_string = '<span id="paging-prev-page-arrow" style="opacity: 0.15">&#9664;</span>&nbsp;&nbsp;' . $paging_page_numbers_string;
                 }
                 
                 //
@@ -1073,9 +1073,9 @@
                         $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] + 1);
                         $url->setanchor($this->id);
                     $u = $url->get();
-                    $paging_page_numbers_string .= ' <span id="paging-next-page-arrow"><a href="' . $u . '">&#9654;</a></span>';
+                    $paging_page_numbers_string .= '<span id="paging-next-page-arrow"><a href="' . $u . '">&#9654;</a></span>';
                 } else {
-                    $paging_page_numbers_string .= '<span id="paging-next-page-arrow" style="opacity: 0.15">&#9654;</span> ';
+                    $paging_page_numbers_string .= '<span id="paging-next-page-arrow" style="opacity: 0.15">&#9654;</span>';
                 }
             }
 
