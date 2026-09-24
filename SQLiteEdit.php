@@ -249,8 +249,7 @@
             //
             // Open the database.
             //
-//$this->sqlite = new SQLite3($this->database_file);
-$this->db = editor_database::open($this->database_file);
+            $this->db = editor_database::open($this->database_file);
 
             //
             // Determine the columns that make up the table
@@ -407,8 +406,6 @@ $this->db = editor_database::open($this->database_file);
                                 // * on the editor_database object. *
                                 // **********************************
                                 //
-//$this->sqlite->enableExceptions(true);
-
                                 try {
                                     $result = $this->db->query($sql);
                                 } catch (Exception $e) {
@@ -452,13 +449,7 @@ $this->db = editor_database::open($this->database_file);
                     if (gettype($this->options[$p][$k]) === 'string' AND preg_match('|^\s*sql\s*:|', $this->options[$p][$k])) {
                         $query   = preg_replace('|^\s*sql\s*:|','',$this->options[$p][$k]);
     
-$results  = $this->db->column($query);
-//$result  = $this->sqlite->query($query);
-//$results = [];
-
-//while($row = $result->fetchArray()) {
-//    $results[] = $row[0];
-//}
+                        $results  = $this->db->column($query);
                         
                         $this->options[$p][$k] = $results;
                     }
@@ -480,13 +471,10 @@ $results  = $this->db->column($query);
 
                 } else if (is_string($this->options['sql_insert']) AND $this->options['sql_insert']) {
 
-//$this->sqlite->enableExceptions(true);
                     $sqliteErrorMessage = false;
 
                     try {
-
-//$result = $this->sqlite->query($this->options['sql_insert']);
-$result = $this->db->query($this->options['sql_insert']);
+                        $result = $this->db->query($this->options['sql_insert']);
                     }catch (Exception $e) {
                         $sqliteErrorMessage = $e->getMessage();
                     }
@@ -543,12 +531,10 @@ $result = $this->db->query($this->options['sql_insert']);
                         $sql = str_ireplace('LIMIT {count}', 'LIMIT ' . count($ids), $sql);
                         $sql = str_ireplace('{primary_key}',$this->options['primary_key'], $sql);
 
-//$this->sqlite->enableExceptions(true);
                         $sqliteErrorMessage = false;
 
                         try {
-//$result = $this->sqlite->query($sql);
-$result = $this->db->query($sql);
+                            $result = $this->db->query($sql);
                         }catch (Exception $e) {
                             $sqliteErrorMessage = $e->getMessage();
                         }
@@ -556,8 +542,7 @@ $result = $this->db->query($sql);
 
                         
                         if (!$sqliteErrorMessage) {
-//$affected = $this->sqlite->changes();
-$affected = $this->db->changes();
+                            $affected = $this->db->changes();
                             editor_messages::success($this->id, $affected > 1 ? $affected . ' rows were deleted' : 'That row was deleted');
                         } else {
                             editor_messages::error($this->id, 'The delete failed (SQLite said: ' . $sqliteErrorMessage . ').');
@@ -790,20 +775,14 @@ $affected = $this->db->changes();
         //
         public function getStructure ()
         {
-$result = $this->db->all(
-    sprintf(
-        "PRAGMA table_info(%s)",
-        $this->database_table
-    )
-);
+            $result = $this->db->all(
+                sprintf(
+                    "PRAGMA table_info(%s)",
+                    $this->database_table
+                )
+            );
 
-//$result  = $this->sqlite->query("pragma table_info({$this->database_table})");
-//$rows = [];
-//while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-//    $rows [] = $row;
-//}
-
-$this->structure = $result;
+            $this->structure = $result;
         }
 
 
@@ -940,11 +919,9 @@ $this->structure = $result;
             //
             // Run the SQL query to update the
             // database.
-//$this->sqlite->enableExceptions(true);
             
             try {
-//$result = $this->sqlite->query($sql);
-$result = $this->db->query($sql);
+                $result = $this->db->query($sql);
             } catch (Exception $e) {
                 $sqliteErrorMessage = $e->getMessage();
             }
@@ -1072,24 +1049,35 @@ $result = $this->db->query($sql);
             }
 
 
-// Add the triangles
-if ($this->options['paging_current'] > 1) {
-    $url = new editor_url($_SERVER['REQUEST_URI']);
-        $url->removequerystringparameter($this->qs('paging'));
-        $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] - 1);
-        $url->setanchor($this->id);
-    $u = $url->get();
-    $paging_page_numbers_string = '<span id="paging-prev-page-arrow"><a href="' . $u . '">&#9664;</a></span> ' . $paging_page_numbers_string;
-}
-
-if ($this->options['paging_current'] < $paging_numpages) {
-    $url = new editor_url($_SERVER['REQUEST_URI']);
-        $url->removequerystringparameter($this->qs('paging'));
-        $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] + 1);
-        $url->setanchor($this->id);
-    $u = $url->get();
-    $paging_page_numbers_string .= ' <span id="paging-next-page-arrow"><a href="' . $u . '">&#9654;</a></span>';
-}
+            //
+            // Add the triangle for the previous page
+            //
+            if ($paging_numpages > 1) {
+                if ($this->options['paging_current'] > 1) {
+                    $url = new editor_url($_SERVER['REQUEST_URI']);
+                        $url->removequerystringparameter($this->qs('paging'));
+                        $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] - 1);
+                        $url->setanchor($this->id);
+                    $u = $url->get();
+                    $paging_page_numbers_string = '<span id="paging-prev-page-arrow"><a href="' . $u . '">&#9664;</a></span> ' . $paging_page_numbers_string;
+                } else {
+                    $paging_page_numbers_string = '<span id="paging-prev-page-arrow" style="opacity: 0.15">&#9664;</span> ' . $paging_page_numbers_string;
+                }
+                
+                //
+                // Add the triangle for the next page
+                //
+                if ($this->options['paging_current'] < $paging_numpages) {
+                    $url = new editor_url($_SERVER['REQUEST_URI']);
+                        $url->removequerystringparameter($this->qs('paging'));
+                        $url->setquerystringparameter($this->qs('paging'), $this->options['paging_current'] + 1);
+                        $url->setanchor($this->id);
+                    $u = $url->get();
+                    $paging_page_numbers_string .= ' <span id="paging-next-page-arrow"><a href="' . $u . '">&#9654;</a></span>';
+                } else {
+                    $paging_page_numbers_string .= '<span id="paging-next-page-arrow" style="opacity: 0.15">&#9654;</span> ';
+                }
+            }
 
 
             if ($this->options['paging_numpages'] > 10) {
@@ -1107,11 +1095,9 @@ if ($this->options['paging_current'] < $paging_numpages) {
             $sql .= $limit;
 
 
-//$this->sqlite->enableExceptions(true);
             
             try {
-//$result = $this->sqlite->query($sql);
-$result = $this->db->query($sql);
+                $result = $this->db->query($sql);
             } catch (Exception $e) {
                 $sqliteErrorMessage = $e->getMessage();
             }
