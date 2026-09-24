@@ -31,7 +31,7 @@
             'surname'  => 'Surname'
         ],
         'columns_widths' => [
-            'id' => 50,
+            'id' => 60,
             '*' => 250
         ],
         'columns_escape' => [
