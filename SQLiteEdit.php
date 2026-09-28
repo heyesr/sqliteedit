@@ -98,6 +98,17 @@
         public $structure;
 
 
+
+
+        //
+        // Has a file upload been stipulated. This contains the
+        // field name(s)
+        //
+        public $editable_types_file = [];
+
+
+
+
         //
         // The constructor
         //
@@ -320,11 +331,42 @@
 
 
 
+
+            //
+            // Determine if a file type input has been set in the
+            // editable_types option. If it has - idicate that the
+            // form encoding type should be multipart/form-data
+            //
+            foreach ($this->options['editable_types'] as $k => $v) {
+                if ($v === 'file') {
+                    $this->editable_types_file[] = $k;
+                }
+            }
+
+
+
+
             // First, if the request is a POST then handle that. It
-            // will be an edit of a new row.
+            // will be an edit of a row.
 
             if (!empty($this->options['editable']) AND !$this->options['editable_view_only'] AND $this->options['sql_update'] AND !empty($_POST['editor_action']) AND $_POST['editor_action'] === 'save' AND !empty($_POST['editor_id']) AND $_POST['editor_id'] === $this->id) {
 
+                // Call the callback for a file upload to allow
+                // the user to do what they want with it. Whatever
+                // the callback returns is stored in the database.
+                if ($this->editable_types_file) {
+
+                    foreach ($_FILES as $k => $v) {
+                        if (!empty($this->options['editable_types'][$k]) AND $this->options['editable_types'][$k] === 'file' AND !empty($this->options['editable_types_file_callbacks'][$k]) AND is_callable($this->options['editable_types_file_callbacks'][$k])) {
+                            
+                            $ret = $this->options['editable_types_file_callbacks'][$k]($this, $k, $_FILES[$k]);
+                            
+                            if ($ret) {
+                                $_POST['data'][$k] = $ret;
+                            }
+                        }
+                    }
+                }
                 //
                 // First, go through the POST data and add blank entries
                 // if there are checkboxes in the configuration but nothing
@@ -455,6 +497,11 @@
                     }
                 }
             }
+            
+            
+            
+            
+
 
 
 
@@ -1956,9 +2003,8 @@ echo '
     
         // Create the string that becomes the HTML thats shown in
         // the Modal Dialog
-
         var html = `
-<form action="' . (!empty($this->options['editable_save_url']) ? $this->options['editable_save_url'] : $_SERVER['REQUEST_URI'] . '#' . $this->id) . '"  method="post">
+<form action="' . (!empty($this->options['editable_save_url']) ? $this->options['editable_save_url'] : $_SERVER['REQUEST_URI'] . '#' . $this->id) . '"  method="post" ' . ($this->editable_types_file ? 'enctype="multipart/form-data"' : '') . '>
 <input type="hidden" name="editor_id" value="${td.getAttribute(\'data-id\')}" />
 ' . (!empty($this->options['editable_save_url']) ? '<input type="hidden" name="editor_database" value="' . $this->database_file . '" />' : '') . '
 ' . (!empty($this->options['editable_save_url']) ? '<input type="hidden" name="editor_table" value="' . $this->database_table . '" />' : '') . '
@@ -2203,7 +2249,7 @@ echo '
                                             <span>${parseFloat(values[column])}</span>`;
 
                         } else {
-                            input_str = `<input type="${type || "text"}" style="box-sizing: border-box; width: 300px; padding: 2px !important; margin: 0 !important; border: 1px solid #333  !important" value="${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[column])}" name="data[${column}]" autocomplete="on" class="editor-edit-input editor-edit-input-${column}" data-original="${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[column])}" />`;
+                            input_str = `<input type="${type || "text"}" style="box-sizing: border-box; width: 300px; padding: 2px !important; margin: 0 !important; border: 1px solid #333  !important" value="${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[column])}" name="${( properties.editable_types[column] === `file` ? column : `data[` + column + `]`)}" autocomplete="on" class="editor-edit-input editor-edit-input-${column}" data-original="${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[column])}" />`;
                         }
                 }
             } else {
