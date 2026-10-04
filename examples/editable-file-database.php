@@ -13,6 +13,14 @@
     the disk).
 </p>
 
+<p>
+    When the image is clicked the <i>editor_modal.show()</i>
+    function is used to show a modal that contains the full
+    size image. If you full size images are quite large though
+    you may need to set width and/or height dimensions on the
+    tag.
+</p>
+
 <SQLiteEdit::source>
 <div>
 <?php
@@ -47,8 +55,13 @@
             'image' => function ($editor, $row, $name, $value)
             {
                 if ($value) {
+                    
                     return sprintf(
-                        '<img src="data:image/png;base64,%s" height="128"/>',
+                        '<img src="data:image/png;base64,%s"
+                              onclick="editor_modal.show(\'<img id=&quot;modal-img-tag&quot; style=&quot;max-width: 600px&quot; />\', {width: \'auto\'}); document.getElementById(\'modal-img-tag\').src=this.src; document.getElementById(\'editor-modaldialog-dialog\').style.textAlign = \'center\';"
+                              height="32"
+                         />',
+
                         $value
                     );
                 }
@@ -69,10 +82,10 @@
         ],
         
         //
-        // When a file is uploaded this code is run. The handler
+        // When a file is uploaded this code is run. The function
         // reads in the uploaded file, base64 encodes it and
         // returns it, whereupon it's stored as a base64 encoded
-        // string in the database.
+        // string in the database by SQLite Edit.
         //
         'editable_types_file_callbacks' => [
             'image' => function ($obj, $field, $file)
@@ -81,7 +94,8 @@
 
                     // Read in the data from disk and base64 encode
                     // it.
-                    $data = base64_encode(file_get_contents($file['tmp_name']));
+                    $data = file_get_contents($file['tmp_name']);
+                    $data = base64_encode($data);
     
                     // Whatever is returned by this function gets
                     // stored in the database.

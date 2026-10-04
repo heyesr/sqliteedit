@@ -45,7 +45,9 @@
             '*' => 140
         ],
         'paging_info_colspan' => 5,
-        'ordering_exclude' => ['actions'],
+        'ordering_exclude' => [
+            'actions' => true
+        ],
         'style' => [
             'div.editor {line-height: initial;}',
             'div.editor table thead tr th:nth-child(7) {background-color: white !important;}',

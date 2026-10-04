@@ -32,12 +32,20 @@
             'Image' => 'Image'
         ],
         
+        //
+        // Use the columns_callback option to add an onclick
+        // event listener to the image that, when the image is
+        // clicked, shows a larger version of the image in a
+        // modal popup (using the editor_modal.show() function).
+        //
         'columns_callbacks' => [
             'image' => function ($editor, $row, $name, $value)
             {
                 if ($value) {
                     return sprintf(
-                        '<a href="./uploaded-images/%s"><img src="./uploaded-images/%s" height="32"/></a>',
+                        '<img src="./uploaded-images/%s"
+                              onclick="editor_modal.show(\'<img id=&quot;modal-img-tag&quot; style=&quot;max-width: 600px&quot; />\', {width: \'auto\'}); document.getElementById(\'modal-img-tag\').src=\'./uploaded-images/%s\'; document.getElementById(\'editor-modaldialog-dialog\').style.textAlign = \'center\';"
+                              height="32"/>',
                         $value,
                         $value
                     );
@@ -66,7 +74,7 @@
             {
                 // Ensure the CWD is writeable
                 if (!is_writeable('.')) {
-                    editor_messages::error($GLOBALS['editor']->id, 'The ditrectory containing the examples is not writeable!');
+                    editor_messages::error($obj->id, 'The directory containing the examples is not writeable!');
                     editor_redirect('editable-file.php');
                 }
 
