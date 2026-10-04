@@ -149,6 +149,7 @@
                 'editable'                          => [],
                 'editable_save_url'                 => null,
                 'editable_types'                    => [],
+                'editable_types_file_callbacks'     => [],
                 'editable_types_select_options'     => [],
                 'editable_types_radio_options'      => [],
                 'editable_types_checkbox_options'   => [],
@@ -1340,6 +1341,7 @@ echo '
             dialog.style.backgroundColor = "white";
             dialog.style.width           = options.width ? options.width + "px" : "500px";
             //dialog.style.border        = "1px solid #999";
+            dialog.style.cursor          = "move";
             dialog.style.zIndex          = 32767;
             dialog.style.padding         = "15px";
             dialog.style.opacity         = 0;
@@ -1386,7 +1388,69 @@ echo '
                 editor_objects["' . $this->id . '"].editor_modal.hide();
             });
         }
+
+
+
+
+        //////////////////////////////////////////////////
+        // Install the  mouse events for dragging the   //
+        // dialog around. Also install the double-click //
+        // event here that reduces the opacity.         //
+        //////////////////////////////////////////////////
+        (function ()
+        {
+            var state = {
+                mousedownX: null,
+                mousedownY: null,
+                mousedown:  false
+            };
+            
+            dialog.ondblclick = function (e)
+            {
+                var faded = 0.3;
         
+                if (dialog.style.opacity == 1) { // DOUBLE EQUALS!
+                    dialog.style.opacity = faded;
+                } else {
+                    dialog.style.opacity = 1;
+                }
+            }
+        
+            dialog.onmousedown = function (e)
+            {
+                // The original position of the dialog
+                state.mousedownX = e.pageX;
+                state.mousedownY = e.pageY;
+        
+                // The original position of the dialog
+                state.originalX = parseInt(dialog.offsetLeft);
+                state.originalY = parseInt(dialog.offsetTop);
+        
+                // Is the mouse button down?
+                state.mousedown = true;
+            };
+        
+            window.onmousemove = function (e)
+            {
+                if (state.mousedown) {
+                    var diffX = e.pageX - state.mousedownX;
+                    var diffY = e.pageY - state.mousedownY;
+        
+                    dialog.style.left = state.originalX + diffX + "px";
+                    dialog.style.top  = state.originalY + diffY + "px";
+                }
+                
+            };
+        
+            window.onmouseup = function (e)
+            {
+                state.mousedown = false;
+            };
+        })();
+
+
+
+
         //
         // Disable page scrolling
         //
@@ -1402,7 +1466,6 @@ echo '
             document.body.style.paddingRight      = scrollbarWidth + "px";
         }, 50);
 
-        
 
         //
         // Add the event listener for getting rid of the
