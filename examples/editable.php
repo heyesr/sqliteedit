@@ -30,9 +30,6 @@
             'surname'  => true,
             'created'  => true
         ],
-        'editable_types' => [
-            'username' => 'text'
-        ],
         'columns_names' => [
             'id'       => 'ID',
             'username' => 'Username',
@@ -44,6 +41,23 @@
             'id' => 75,
             '*' => 150
         ],
+'events' => [
+    'beforeupdate' => function ($obj, $data)
+    {
+        // This is a debug function in that's part of the source
+        // file and prints the contents of the object.
+        p($data);
+        
+        //$original = $obj->db->row(sprintf(
+        //    "SELECT * FROM %s WHERE %s = %d LIMIT 1",
+        //        $obj->database_table,
+        //        $data['editor_primary_key_column'],
+        //        $data['editor_primary_key_value']
+        //));
+        //
+        //p($original);
+    }
+],
         'paging_perpage' => 10,
         'style' =>[
             'div.editor {line-height: initial;}',

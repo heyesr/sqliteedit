@@ -31,7 +31,7 @@
     // given on the querystring.
     //
     $result = $db->query(sprintf(
-        "SELECT * FROM images WHERE id = %d",
+        "SELECT * FROM images WHERE id = %d LIMIT 1",
         (int)$_GET['id']
     ));
     

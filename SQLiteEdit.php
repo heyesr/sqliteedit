@@ -1,6 +1,6 @@
 <?php
     // ***************************************
-    // * SQLite Edit for PHP                *
+    // * SQLite Edit for PHP                 *
     // *                                     *
     // * This is free code - it's  released  *
     // * to the public domain (ie the same   *
@@ -177,14 +177,16 @@
                 'style'                             => [],
                 'actions'                           => [],
                 'checkboxes'                        => false,
-                'checkboxes_radio'                  => false
+                'checkboxes_radio'                  => false,
+                'events'                            => []
             ];
 
             // Add the user specified options
             foreach ($options as $k => $v) {
                 $this->options[$k] = $v;
             }
-            
+
+
             // Remove the "on" from the start of the event name in
             // case the user has given "onclick" or "ondblclick"
             $this->options['editable_event'] = preg_replace('/^on/', '', $this->options['editable_event']);
@@ -299,7 +301,7 @@
                     )
                 );
                 
-                while($row = $this->db->fetchRow($result)) {
+                while($row = $this->db->fetchArray($result)) {
                     if ($row['pk']) {
                         $this->options['primary_key'] = $row['name'];
                     }
@@ -349,121 +351,154 @@
 
             // First, if the request is a POST then handle that. It
             // will be an edit of a row.
+            if (    !empty($this->options['editable'])
+                AND !$this->options['editable_view_only']
+                AND $this->options['sql_update']
+                AND !empty($_POST)
+                AND !empty($_POST['editor_action'])
+                AND $_POST['editor_action'] === 'save'
+                AND !empty($_POST['editor_id'])
+                AND $_POST['editor_id'] === $this->id
+               ) {
 
-            if (!empty($this->options['editable']) AND !$this->options['editable_view_only'] AND $this->options['sql_update'] AND !empty($_POST['editor_action']) AND $_POST['editor_action'] === 'save' AND !empty($_POST['editor_id']) AND $_POST['editor_id'] === $this->id) {
+                $ret = $this->fireEvent('beforeupdate', [
+                    'data' => $_POST['data'],
+                    'editor_primary_key_column' => $_POST['editor_primary_key_column'],
+                    'editor_primary_key_value'  => $_POST['editor_primary_key_value']
+                ]);
 
-                // Call the callback for a file upload to allow
-                // the user to do what they want with it. Whatever
-                // the callback returns is stored in the database.
-                if ($this->editable_types_file) {
-
-                    foreach ($_FILES as $k => $v) {
-                        if (!empty($this->options['editable_types'][$k]) AND $this->options['editable_types'][$k] === 'file' AND !empty($this->options['editable_types_file_callbacks'][$k]) AND is_callable($this->options['editable_types_file_callbacks'][$k])) {
-                            
-                            $ret = $this->options['editable_types_file_callbacks'][$k]($this, $k, $_FILES[$k]);
-                            
-                            if ($ret) {
-                                $_POST['data'][$k] = $ret;
+                // Must be exactly false
+                if ($ret !== false) {
+    
+                    // Call the callback for a file upload to allow
+                    // the user to do what they want with it. Whatever
+                    // the callback returns is stored in the database.
+                    if ($this->editable_types_file) {
+    
+                        foreach ($_FILES as $k => $v) {
+                            if (!empty($this->options['editable_types'][$k]) AND $this->options['editable_types'][$k] === 'file' AND !empty($this->options['editable_types_file_callbacks'][$k]) AND is_callable($this->options['editable_types_file_callbacks'][$k])) {
+                                
+                                $ret = $this->options['editable_types_file_callbacks'][$k]($this, $k, $_FILES[$k]);
+                                
+                                if ($ret) {
+                                    $_POST['data'][$k] = $ret;
+                                }
                             }
                         }
                     }
-                }
-                //
-                // First, go through the POST data and add blank entries
-                // if there are checkboxes in the configuration but nothing
-                // has been submitted. The browser won't send anything if
-                // no checkboxes were checked so this needs to be done
-                // for when there's something in the database but no
-                // checkboxes were checked. In that case, nothing
-                // would change for that field normally but it needs
-                // to be set to nothing in case theres already
-                // something in that field.
-                //
-                foreach ($this->options['editable_types'] as $k => $v) {
-                    if ( ($v === 'checkbox' OR $v === 'radio') AND !isset($_POST['data'][$k])) {
-                        $_POST['data'][$k] = '';
-                    }
-                }
-
-                // Pass the data to the editable_callback function,
-                // if its defined. if this function returns a
-                // falsey value then the save SQL is not run.
-                //
-                // If the sql_update option is a function then it's
-                // not called.
-                //
-                if (is_callable($this->options['editable_callback'])) {
-                    $callback_return = $this->options['editable_callback']($this, $_POST['data']);
-                }
-
-                if (!isset($callback_return) OR is_null($callback_return) OR $callback_return) {
-                    if (is_callable($this->options['sql_update'])) {
-                        $this->options['sql_update'](
-                            $this,
-                            $_POST['data'],
-                            $_POST['editor_primary_key_column'],
-                            $_POST['editor_primary_key_value']
-                        );
-    
-                    } else {
-    
-                        // Initially set this to true. If any query
-                        // fails it's set to false.
-                        $final_result = true;
-                        $sqliteErrorMessages = [];
-    
-                        if (!empty($_POST['data'])) {
-                            foreach ($_POST['data'] as $k => $v) {
-        
-                                // Only allow values that have been
-                                // designated as being editable are allowed
-                                // to be saved.
-                                if (!isset($this->options['editable'][$k]) OR !$this->options['editable'][$k]) {
-                                    continue;
-                                }
-        
-        
-        
-                                // Convert datetime formats
-                                if (!is_array($v) AND preg_match('/(\d\d\d\d-\d\d-\d\d)(?: |T)(\d\d:\d\d)((?::\d\d)?)/', $v, $matches)) {
-                                    $_POST['data'][$k] = sprintf('%s %s', $matches[1], $matches[2]);
-                                    
-                                    // Add seconds
-                                    if (!$matches[3]) {
-                                        $_POST['data'][$k] .= ':00';
-                                    }
-                                }
-        
-                                $sql = str_ireplace('{table}', $this->options['table'], $this->options['sql_update']);
-                                $sql = str_ireplace('{column}', $k, $sql);
-                                $sql = str_ireplace('{value}', "'" . SQLite3::escapeString(is_array($v) ? implode(',', $v): $v) . "'", $sql);
-                                $sql = str_ireplace('{id}', (is_integer($_POST['editor_primary_key_value']) OR is_numeric($_POST['editor_primary_key_value'])) ? intval($_POST['editor_primary_key_value']) : "'" . SQLite3::escapeString($_POST['editor_primary_key_value']) . "'", $sql);
-                                $sql = str_ireplace('{primary_key}',$_POST['editor_primary_key_column'], $sql);
-
-        
-                                // Run the SQL query to update the
-                                // database.
-                                //
-                                // **********************************
-                                // * This is now done automatically *
-                                // * on the editor_database object. *
-                                // **********************************
-                                //
-                                try {
-                                    $result = $this->db->query($sql);
-                                } catch (Exception $e) {
-                                    $sqliteErrorMessages[] = $e->getMessage();
-                                }
-        
-                                $final_result = $final_result && empty($sqliteErrorMessages);
-                            }
+                    //
+                    // First, go through the POST data and add blank
+                    // entries if there are checkboxes in the
+                    // configuration but nothing has been submitted.
+                    // The browser won't send anything if no checkboxes
+                    // were checked so this needs to be done for when
+                    // there's something in the database but no
+                    // checkboxes were checked. In that case, nothing
+                    // would change for that field normally but it
+                    // needs to be set to nothing in case theres
+                    // already something in that field.
+                    //
+                    foreach ($this->options['editable_types'] as $k => $v) {
+                        if ( ($v === 'checkbox' OR $v === 'radio') AND !isset($_POST['data'][$k])) {
+                            $_POST['data'][$k] = '';
                         }
+                    }
     
-                        if ($final_result) {
-                            editor_messages::success($this->id, 'The database was updated');
+                    // Pass the data to the editable_callback function,
+                    // if its defined. if this function returns a
+                    // falsey value then the save SQL is not run.
+                    //
+                    // If the sql_update option is a function then it's
+                    // not called.
+                    //
+                    if (is_callable($this->options['editable_callback'])) {
+                        $callback_return = $this->options['editable_callback']($this, $_POST['data']);
+                    }
+    
+                    if (!isset($callback_return) OR is_null($callback_return) OR $callback_return) {
+                        if (is_callable($this->options['sql_update'])) {
+                            
+                            $this->options['sql_update'](
+                                $this,
+                                $_POST['data'],
+                                $_POST['editor_primary_key_column'],
+                                $_POST['editor_primary_key_value']
+                            );
+                            
+                            $this->fireEvent('update', [
+                                'data' => $_POST['data'],
+                                'editor_primary_key_column' => $_POST['editor_primary_key_column'],
+                                'editor_primary_key_value'  => $_POST['editor_primary_key_value']
+                            ]);
+        
                         } else {
-                            foreach ($sqliteErrorMessages as $e) {
-                                editor_messages::error($this->id, 'The update failed (SQLite said: ' . $e . ').');
+        
+                            // Initially set this to true. If any query
+                            // fails it's set to false.
+                            $final_result = true;
+                            $sqliteErrorMessages = [];
+        
+                            if (!empty($_POST['data'])) {
+                                foreach ($_POST['data'] as $k => $v) {
+            
+                                    // Only allow values that have been
+                                    // designated as being editable are allowed
+                                    // to be saved.
+                                    if (!isset($this->options['editable'][$k]) OR !$this->options['editable'][$k]) {
+                                        continue;
+                                    }
+            
+            
+            
+                                    // Convert datetime formats
+                                    if (!is_array($v) AND preg_match('/(\d\d\d\d-\d\d-\d\d)(?: |T)(\d\d:\d\d)((?::\d\d)?)/', $v, $matches)) {
+                                        $_POST['data'][$k] = sprintf('%s %s', $matches[1], $matches[2]);
+                                        
+                                        // Add seconds
+                                        if (!$matches[3]) {
+                                            $_POST['data'][$k] .= ':00';
+                                        }
+                                    }
+            
+                                    $sql = str_ireplace('{table}', $this->options['table'], $this->options['sql_update']);
+                                    $sql = str_ireplace('{column}', $k, $sql);
+                                    $sql = str_ireplace('{value}', "'" . SQLite3::escapeString(is_array($v) ? implode(',', $v): $v) . "'", $sql);
+                                    $sql = str_ireplace('{id}', (is_integer($_POST['editor_primary_key_value']) OR is_numeric($_POST['editor_primary_key_value'])) ? intval($_POST['editor_primary_key_value']) : "'" . SQLite3::escapeString($_POST['editor_primary_key_value']) . "'", $sql);
+                                    $sql = str_ireplace('{primary_key}',$_POST['editor_primary_key_column'], $sql);
+    
+            
+                                    // Run the SQL query to update the
+                                    // database.
+                                    //
+                                    // **********************************
+                                    // * This is now done automatically *
+                                    // * on the editor_database object. *
+                                    // **********************************
+                                    //
+                                    try {
+                                        $result = $this->db->query($sql);
+                                    } catch (Exception $e) {
+                                        $sqliteErrorMessages[] = $e->getMessage();
+                                    }
+            
+                                    $final_result = $final_result && empty($sqliteErrorMessages);
+                                }
+                            }
+        
+                            if ($final_result) {
+                                
+                                editor_messages::success($this->id, 'The database was updated');
+                                
+                                $this->fireEvent('update', [
+                                    'data' => $_POST['data'],
+                                    'editor_primary_key_column' => $_POST['editor_primary_key_column'],
+                                    'editor_primary_key_value'  => $_POST['editor_primary_key_value']
+                                ]);
+    
+                            } else {
+                                foreach ($sqliteErrorMessages as $e) {
+                                    editor_messages::error($this->id, 'The update failed (SQLite said: ' . $e . ').');
+                                }
                             }
                         }
                     }
@@ -514,23 +549,30 @@
             // the configuration).
             if ($this->options['sql_insert'] AND !empty($_GET[$this->qs('add')]) AND $_GET[$this->qs('add')] === $this->id) {
 
-                if (is_callable($this->options['sql_insert'])) {
-                    $this->options['sql_insert']($this);
+                $ret = $this->fireEvent('beforeinsert');
 
-                } else if (is_string($this->options['sql_insert']) AND $this->options['sql_insert']) {
-
-                    $sqliteErrorMessage = false;
-
-                    try {
-                        $result = $this->db->query($this->options['sql_insert']);
-                    }catch (Exception $e) {
-                        $sqliteErrorMessage = $e->getMessage();
-                    }
-
-                    if (!$sqliteErrorMessage) {
-                        editor_messages::success($this->id, 'A new row was added');
-                    } else {
-                        editor_messages::error($this->id, 'The addition failed (SQLite said: ' . $sqliteErrorMessage . ').');
+                if ($ret !== false) {
+                    if (is_callable($this->options['sql_insert'])) {
+                        $this->options['sql_insert']($this);
+                        
+                        $this->fireEvent('insert');
+    
+                    } else if (is_string($this->options['sql_insert']) AND $this->options['sql_insert']) {
+    
+                        $sqliteErrorMessage = false;
+    
+                        try {
+                            $result = $this->db->query($this->options['sql_insert']);
+                        }catch (Exception $e) {
+                            $sqliteErrorMessage = $e->getMessage();
+                        }
+    
+                        if (!$sqliteErrorMessage) {
+                            $this->fireEvent('insert');
+                            editor_messages::success($this->id, 'A new row was added');
+                        } else {
+                            editor_messages::error($this->id, 'The addition failed (SQLite said: ' . $sqliteErrorMessage . ').');
+                        }
                     }
                 }
 
@@ -561,43 +603,52 @@
  
                     $ids = $_GET[$this->qs('delete')];
 
-                    if (is_callable($this->options['sql_delete'])) {
-                        $this->options['sql_delete']($this, $ids);
+                    $ret = $this->fireEvent('beforedelete', ['ids' => $ids]);
+
+                    if ($ret !== false AND !empty ($ids)) {
+                        if (is_callable($this->options['sql_delete'])) {
+                            
+                            $this->options['sql_delete']($this, $ids);
+                            $this->fireEvent('delete', ['ids' => $ids]);
+        
+                        } else if (is_string($this->options['sql_delete'])) {
+                            
+                            // If any of the submitted IDs are not numeric
+                            // then quote them.
+                            foreach ($ids as &$v) {
+                                if (!is_numeric($v)) {
+                                    $v = $this->db->quote($v);
+                                }
+                            }
     
-                    } else if (is_string($this->options['sql_delete'])) {
-                        
-                        // If any of the submitted IDs are not numeric
-                        // then quote them.
-                        foreach ($ids as &$v) {
-                            if (!is_numeric($v)) {
-                                $v = $this->db->quote($v);
+                            $sql = str_ireplace('{table}', $this->options['table'], $this->options['sql_delete']);
+                            $sql = str_ireplace('{ids}', implode(',', $ids), $sql);
+                            $sql = str_ireplace('LIMIT {count}', 'LIMIT ' . count($ids), $sql);
+                            $sql = str_ireplace('{primary_key}',$this->options['primary_key'], $sql);
+    
+                            $sqliteErrorMessage = false;
+    
+                            try {
+                                $result = $this->db->query($sql);
+                            }catch (Exception $e) {
+                                $sqliteErrorMessage = $e->getMessage();
+                            }
+    
+    
+                            
+                            if (!$sqliteErrorMessage) {
+                                $affected = $this->db->changes();
+                                editor_messages::success($this->id, $affected > 1 ? $affected . ' rows were deleted' : 'That row was deleted');
+    
+                                $this->fireEvent('delete', ['ids' => $ids]);
+    
+                            } else {
+                                editor_messages::error($this->id, 'The delete failed (SQLite said: ' . $sqliteErrorMessage . ').');
                             }
                         }
-
-                        $sql = str_ireplace('{table}', $this->options['table'], $this->options['sql_delete']);
-                        $sql = str_ireplace('{ids}', implode(',', $ids), $sql);
-                        $sql = str_ireplace('LIMIT {count}', 'LIMIT ' . count($ids), $sql);
-                        $sql = str_ireplace('{primary_key}',$this->options['primary_key'], $sql);
-
-                        $sqliteErrorMessage = false;
-
-                        try {
-                            $result = $this->db->query($sql);
-                        }catch (Exception $e) {
-                            $sqliteErrorMessage = $e->getMessage();
-                        }
-
-
-                        
-                        if (!$sqliteErrorMessage) {
-                            $affected = $this->db->changes();
-                            editor_messages::success($this->id, $affected > 1 ? $affected . ' rows were deleted' : 'That row was deleted');
-                        } else {
-                            editor_messages::error($this->id, 'The delete failed (SQLite said: ' . $sqliteErrorMessage . ').');
-                        }
+                    } else if ($ret !== false AND empty($ids)) {
+                        editor_messages::error($this->id, 'No rows were selected!');
                     }
-                } else {
-                    editor_messages::error($this->id, 'No rows were selected!');
                 }
 
                 // Build the URL to redirect back to
@@ -625,6 +676,41 @@
             // table.
             //
             $this->printTable();
+        }
+
+
+
+
+
+
+
+
+        //
+        // Fires on event (eg ondelete)
+        //
+        // @param $name  string The name of the evnt to fire.
+        // @param $extra array  Any extra information to pass to the
+        //                      registered event listener(s).
+        //
+        function fireEvent($name, $extra = null)
+        {
+            $events = $this->options['events'];
+            $name   = preg_replace('/^on/', '', $name);
+            $ret    = null;
+            
+            // If the event has had the "on" word added to the name
+            // accommodate that.
+            if (empty($this->options['events'][$name]) AND !empty($this->options['events']['on' . $name])) {
+                $this->options['events'][$name] = $this->options['events']['on' . $name];
+            }
+
+            if (!empty($this->options['events'][$name])) {
+                if (!empty($this->options['events'][$name]) AND is_callable($this->options['events'][$name])) {
+                    $ret = ($this->options['events'][$name])($this, $extra);
+                }
+            }
+
+            return $ret;
         }
 
 
@@ -1341,7 +1427,7 @@ echo '
             dialog.style.backgroundColor = "white";
             dialog.style.width           = options.width ? options.width + "px" : "500px";
             //dialog.style.border        = "1px solid #999";
-            dialog.style.cursor          = "move";
+            //dialog.style.cursor          = "move";
             dialog.style.zIndex          = 32767;
             dialog.style.padding         = "15px";
             dialog.style.opacity         = 0;
@@ -1393,46 +1479,50 @@ echo '
 
 
         //////////////////////////////////////////////////
-        // Install the  mouse events for dragging the   //
-        // dialog around. Also install the double-click //
-        // event here that reduces the opacity.         //
+        // Install the  mouse events for moving the     //
+        // dialog around. To move the dialog just       //
+        // double click it - move it to where you want  //
+        // it and then single click to let go.          //
         //////////////////////////////////////////////////
         (function ()
         {
             var state = {
                 mousedownX: null,
                 mousedownY: null,
-                mousedown:  false
+                moving:     false
             };
-            
+        
             dialog.ondblclick = function (e)
             {
-                var faded = 0.3;
-        
-                if (dialog.style.opacity == 1) { // DOUBLE EQUALS!
-                    dialog.style.opacity = faded;
+                if (state.moving === true) {
+                    state.moving = false;
                 } else {
-                    dialog.style.opacity = 1;
+                    // The original position of the dialog
+                    state.mousedownX = e.pageX;
+                    state.mousedownY = e.pageY;
+            
+                    // The original position of the dialog
+                    state.originalX = parseInt(dialog.offsetLeft);
+                    state.originalY = parseInt(dialog.offsetTop);
+            
+                    // Is the mouse button down?
+                    state.moving = true;
                 }
-            }
+            };
         
-            dialog.onmousedown = function (e)
+            // This event listener allows you to stop the dialog
+            // moving
+            dialog.onclick = function (e)
             {
-                // The original position of the dialog
-                state.mousedownX = e.pageX;
-                state.mousedownY = e.pageY;
-        
-                // The original position of the dialog
-                state.originalX = parseInt(dialog.offsetLeft);
-                state.originalY = parseInt(dialog.offsetTop);
-        
-                // Is the mouse button down?
-                state.mousedown = true;
+                // Set the moving flag as false
+                if (state.moving) {
+                    state.moving = false;
+                }
             };
         
             window.onmousemove = function (e)
             {
-                if (state.mousedown) {
+                if (state.moving) {
                     var diffX = e.pageX - state.mousedownX;
                     var diffY = e.pageY - state.mousedownY;
         
@@ -1440,11 +1530,6 @@ echo '
                     dialog.style.top  = state.originalY + diffY + "px";
                 }
                 
-            };
-        
-            window.onmouseup = function (e)
-            {
-                state.mousedown = false;
             };
         })();
 
@@ -2313,6 +2398,18 @@ echo '
 
                         } else {
                             input_str = `<input type="${type || "text"}" style="box-sizing: border-box; width: 300px; padding: 2px !important; margin: 0 !important; border: 1px solid #333  !important" value="${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[column])}" name="${( properties.editable_types[column] === `file` ? column : `data[` + column + `]`)}" autocomplete="on" class="editor-edit-input editor-edit-input-${column}" data-original="${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[column])}" />`;
+                            
+                            // Add a drag target underneath the
+                            // input for file upload types.
+                            if (type === "file") {
+                                input_str += `
+                                    <div class="file-upload-drag-target"
+                                         ondrop="this.classList.remove(\'editor_dragover\'); this.parentNode.querySelector(\'input[type=file]\').files = event.dataTransfer.files;return false"
+                                         ondragover="event.preventDefault();event.stopPropagation(); return false;"
+                                         ondragenter="this.className += \' editor_dragover \'" ondragenter="this.classList.add(\'editor_dragover\')"
+                                         ondragleave="this.classList.remove(\'editor_dragover\');">Drag a file here</div>
+                                `;
+                            }
                         }
                 }
             } else {
@@ -3262,6 +3359,9 @@ Are you sure that you want to add a new row?<br />
         div.editor-container-' . $this->id . ' div.editor div.editor-search-input-container span.submit-search-icon {position: absolute; right: 0; top: 50%; cursor: pointer; transform: translateX(-12px) translateY(-48%) scale(1.8) rotate(45deg); line-height: 25px;color: #666;}
         div.editor-container-' . $this->id . ' div.editor span#search-help-link {color: blue; cursor: pointer;}
 
+        div#editor-edit-row-popup-container div.file-upload-drag-target {margin-top: 10px; color: gray; text-align: center; background-color: #eee; border-radius: 5px; border: 3px dashed #ccc; padding: 20px;}
+        div#editor-edit-row-popup-container div.file-upload-drag-target.editor_dragover {border-color: red; background-color: #fee; color: red;}
+
         button#editor-addrowmodal-cancel {cursor: pointer; opacity: 0.5; padding: 3px; font-size: 120%;}
         button#editor-addrowmodal-ok {cursor: pointer; color: green; font-weight: bold; padding: 3px; font-size: 120%}
         button#editor-deleterowsmodal-cancel {cursor: pointer; opacity: 0.5; font-size: 120%;}
@@ -3415,11 +3515,25 @@ Are you sure that you want to add a new row?<br />
         //
         public static function open ($filename)
         {
-            $db         = new editor_database();
-            $db->sqlite = new SQLite3($filename);
-            $db->enableExceptions();
+            $db = new editor_database($filename);
             
             return $db;
+        }
+
+
+
+
+
+
+
+
+        //
+        // The constructor
+        //
+        public function __construct ($filename)
+        {
+            $this->sqlite = new SQLite3($filename);
+            $this->enableExceptions();
         }
 
 
@@ -3455,14 +3569,33 @@ Are you sure that you want to add a new row?<br />
         // @param object $result The result that is returned from
         //                       the query method.
         // @param int $mode      How to index the results - numerically
-        //                       or (the default) asociatively.
+        //                       or (the default) asociatively. The
+        //                       default is numerically.
         // @return array         The next row in the resultset.
         //
-        public function fetchRow ($result, $mode = SQLITE3_ASSOC)
+        public function fetchRow ($result, $mode = SQLITE3_NUM)
         {
-            $row = $result->fetchArray($mode);
+            return $result->fetchArray($mode);
+        }
 
-            return $row;
+
+
+
+
+
+
+
+        //
+        // Fetches a single row of data from a resultset always
+        // using the SQLITE3_ASSOC option.
+        //
+        // @param object $result The result that is returned from
+        //                       the query method.
+        // @return array         The next row in the resultset.
+        //
+        public function fetchArray ($result, $mode = SQLITE3_ASSOC)
+        {
+            return $result->fetchArray($mode);
         }
 
 
@@ -3535,6 +3668,22 @@ Are you sure that you want to add a new row?<br />
         public function changes ()
         {
             return $this->sqlite->changes();
+        }
+
+
+
+
+
+
+
+
+        //
+        // Returns the last inserted row id for auto increment
+        // columns.
+        //
+        function lastInsertID()
+        {
+            return $this->sqlite->lastInsertRowID();
         }
 
 

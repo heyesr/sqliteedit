@@ -41,7 +41,7 @@
             }
         ],
         'columns_widths' => [
-            'id' => 50,
+            'id' => 75,
             '*' => 140
         ],
         'paging_info_colspan' => 5,

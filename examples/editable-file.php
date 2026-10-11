@@ -16,16 +16,17 @@
     $editor = new SQLiteEdit([
         'filename' => './sqliteedit.db',
         'table'    => 'images',
-
         // Set the image field as being editable.
+        //
         'editable' => [
             'image' => true
         ],
         
-        // Stipulate that the editable field is a filee upload type
+        // Stipulate that the editable field is a file upload type
         'editable_types' => [
             'image' => 'file'
         ],
+
         
         'columns_names' => [
             'id'    => 'ID',
@@ -43,8 +44,8 @@
             {
                 if ($value) {
                     return sprintf(
-                        '<img src="./uploaded-images/%s"
-                              onclick="editor_modal.show(\'<img id=&quot;modal-img-tag&quot; style=&quot;max-width: 600px&quot; />\', {width: \'auto\'}); document.getElementById(\'modal-img-tag\').src=\'./uploaded-images/%s\'; document.getElementById(\'editor-modaldialog-dialog\').style.textAlign = \'center\';"
+                        '<img src="%s"
+                              onclick="event.stopPropagation(); editor_modal.show(\'<img id=&quot;modal-img-tag&quot; style=&quot;max-width: 600px&quot; />\', {width: \'auto\'}); document.getElementById(\'modal-img-tag\').style.pointerEvents = \'none\';;  document.getElementById(\'modal-img-tag\').src=\'%s\'; document.getElementById(\'editor-modaldialog-dialog\').style.textAlign = \'center\';"
                               height="32"/>',
                         $value,
                         $value
@@ -85,19 +86,24 @@
                 if (!file_exists('./uploaded-images')) {
                     mkdir('uploaded-images');
                 }
-            
+
+                // Ensure the uploaded-images dir is writeable
+                if (!is_writeable('./uploaded-images')) {
+                    editor_messages::error($obj->id, 'The uploaded-images directory is not writeable!');
+                    editor_redirect('editable-file.php');
+                }
+
                 if ($file['error'] === UPLOAD_ERR_OK) {
-                    $filename = basename($file['tmp_name']) . '.png';
     
                     // Move the file into the examples folder
                     move_uploaded_file(
                         $file['tmp_name'],
-                        './uploaded-images/' . $filename
+                        $f = './uploaded-images/' . basename($file['name'])
                     );
-    
+
                     // Whatever is returned by this function gets
                     // stored in the database.
-                    return $filename;
+                    return $f;
                 }
             }
         ],
@@ -112,7 +118,7 @@
             'div.editor input[type=checkbox]{cursor: pointer;transform:scale(1.5) !important;}'
         ]
     ]);
-    
+
     $editor->draw();
 ?>
 </div>
