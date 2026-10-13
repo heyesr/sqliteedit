@@ -3623,6 +3623,8 @@ Are you sure that you want to add a new row?<br />
         //
         // @param object $result The result that is returned from
         //                       the query method.
+        // @param number $mode   Whether to get an indexed array or
+        //                       an associative array.
         // @return array         The next row in the resultset.
         //
         public function fetchArray ($result, $mode = SQLITE3_ASSOC)
@@ -3730,16 +3732,19 @@ Are you sure that you want to add a new row?<br />
         //
         // @param string $sql The SQL query to run and get a
         //                    row of results for.
+        // @param number $index  The index of the row to fetch.
+        // @param number $mode   Whether to get an indexed array or
+        //                       an associative array.
         // @return array      The results of the query.
         //
-        public function row($sql, $index = 0)
+        public function row($sql, $index = 0, $mode = SQLITE3_ASSOC)
         {
             $result = $this->sqlite->query($sql);
 
             if ($result) {
 
                 $i = 0;
-                while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                while ($row = $result->fetchArray($mode)) {
                     if ($i === $index) {
                         return $row;
                     }
@@ -3761,9 +3766,10 @@ Are you sure that you want to add a new row?<br />
         //
         // This function returns a column of data.
         //
-        // @param string $sql The SQL query to run and get a
-        //                    column of results for.
-        // @return array      The results of the query.
+        // @param string $sql   The SQL query to run and get a
+        //                      column of results for.
+        // @param number $index The index of the row to fetch.
+        // @return array        The results of the query.
         //
         public function column($sql, $index = 0)
         {
@@ -3771,6 +3777,7 @@ Are you sure that you want to add a new row?<br />
             $ret    = [];
             
             if ($result) {
+                
                 while ($row = $result->fetchArray(SQLITE3_BOTH)) {
                     $ret[] = isset($row[$index]) ? $row[$index] : null;
                 }
@@ -3793,15 +3800,17 @@ Are you sure that you want to add a new row?<br />
         //
         // @param string $sql The SQL query to run and get all of
         //                    the results for.
+        // @param number $mode   Whether to get an indexed array or
+        //                       an associative array.
         // @return array      The results of the query.
-        public function all($sql)
+        public function all($sql, $mode = SQLITE3_ASSOC)
         {
 
             $result = $this->query($sql);
             $ret = [];
             
             if ($result) {
-                while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                while ($row = $result->fetchArray($mode)) {
                     $ret[] = $row;
                 }
                 
