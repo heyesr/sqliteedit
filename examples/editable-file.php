@@ -30,7 +30,7 @@
         
         'columns_names' => [
             'id'    => 'ID',
-            'Image' => 'Image'
+            'image' => 'Image'
         ],
         
         //
