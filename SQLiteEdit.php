@@ -2413,6 +2413,20 @@ echo '
                         }
                 }
             } else {
+
+                //
+                // If the type of the input has been stipulated
+                // as being a file upload, strip any path
+                // information from the filename so that the
+                // path isnt leaked to the user.
+                //
+                if (   properties.editable_types
+                    && properties.editable_types[v]
+                    && properties.editable_types[v] === "file") {
+                
+                    values[v] = editor_basename(values[v]);
+                }
+
                 input_str = `${editor_objects["' . $this->id . '"].editor_htmlspecialchars(values[v])}`;
             }
 
@@ -2790,6 +2804,24 @@ echo '
 
         //console.log(str);
         location.href = str;
+    };
+
+
+
+
+
+
+
+
+    //
+    // Mimics the PHP function basename()
+    //
+    //@param  string path The path/filename eg /foo/bar/jello.jkl
+    //@return string      Just the filename - ie jello.jkl
+    //
+    editor_basename = function (path)
+    {
+        return path.split("/").reverse()[0];
     };
 
 </script>
@@ -4160,4 +4192,80 @@ Are you sure that you want to add a new row?<br />
     if (!headers_sent()) {
         @session_start();
     }
+
+/*
+    //
+    // This is the code that handles pasting an image from
+    // the clipboard. It's not implemented yet. This seems
+    // to be targeted at images only - need to change it to
+    // files in general.
+    //
+    ALLOW_PASTE_UPLOAD   = true;
+    PASTE_UPLOAD_COUNTER = 1;
+
+    document.body.onpaste = function (e)
+    {
+        // Multiple pasted images are not permitted because it makes
+        // the POST size too large
+        if (!ALLOW_PASTE_UPLOAD) {
+            alert('[ERROR] Only 1 pasted image upload is permitted');
+            return;
+        }
+
+        // Use event.originalEvent.clipboard for newer chrome versions
+        var items = (e.clipboardData  || e.originalEvent.clipboardData).items;
+
+        // Find pasted image among pasted items
+        var blob = null;
+        for (var i=0; i<items.length; i++) {
+            if (items[i].type.indexOf("image") === 0) {
+                blob = items[i].getAsFile();
+            }
+        }
+
+        // Load image if there is a pasted image
+        if (blob !== null) {
+            
+            ALLOW_PASTE_UPLOAD = false;
+            
+            var reader = new FileReader();
+
+            reader.onload = function(e)
+            {
+                // Make sure this function is globally available
+                window.deletePastedImage = function (div, index)
+                {
+                    // Remove the div that the <img> tag sits in
+                    div.parentNode.removeChild(div);
+                    
+                    // Remove the associated textarea
+                    var textarea = document.getElementById('pasted-image-' + index)
+                    textarea.parentNode.removeChild(textarea);
+                    
+                    ALLOW_PASTE_UPLOAD = true;
+                }
+
+                var fname = e.target.result;
+                document.getElementById('uploaded-files-thumbnails').innerHTML += '<div id="uploaded-files-thumbnails-container" style="display: inline-block; position: relative" ><img src="' + fname + '" width="128" height="128" style="margin-right: 15px"><span onclick="if (confirm(\'Are you sure that you want to delete this attached image?\')) deletePastedImage(this.parentNode, ' + PASTE_UPLOAD_COUNTER + ')" style="cursor: pointer; position: absolute; font-size: 8pt; line-height: 15px; background-color: rgba(128,128,128,128); color: white; font-weight: bold; top: 0; right: 0">&nbsp;DELETE&nbsp;</span></a></div>'
+    
+
+                // Add a textarea with the URL in it
+                var textarea      = document.createElement('textarea');
+                textarea.name     = 'pasted-image[]';
+                
+                // Need to increment this when multiple images are allowed
+                textarea.id            = 'pasted-image-' + PASTE_UPLOAD_COUNTER;
+                textarea.style.width   = '128px';
+                textarea.style.height  = '128px';
+                textarea.style.display = 'none';
+                document.getElementById('post-new-message-form').appendChild(textarea);
+                textarea.value = e.target.result;
+
+                PASTE_UPLOAD_COUNTER++;
+            };
+    
+            reader.readAsDataURL(blob);
+        }
+    }
+*/
 ?>
