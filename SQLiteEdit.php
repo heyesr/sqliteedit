@@ -675,6 +675,7 @@
             // Print the list of database rows in the requested
             // table.
             //
+            //
             $this->printTable();
         }
 
@@ -1059,7 +1060,7 @@
             } catch (Exception $e) {
                 $sqliteErrorMessage = $e->getMessage();
             }
-            
+
             if (!empty($sqliteErrorMessage)) {
                 editor_messages::error($this->id, $sqliteErrorMessage);
             }
@@ -1113,29 +1114,38 @@
 
                 // Ignore negative page numbers - redirect to page
                 // one.
-                if (!empty($_GET[$this->qs('paging')]) AND  $_GET[$this->qs('paging')] < 1) {
+
+                if (    !empty($_GET[$this->qs('paging')])
+                    AND $_GET[$this->qs('paging')] < 1
+                   ) {
+
 
                     $url = new editor_url($_SERVER['REQUEST_URI']);
                     $url->removequerystringparameter($this->qs('paging'));
                     $url->setanchor($this->id);
-                    
+
                     $u = $url->get();
 
                     editor_redirect($u);
                 }
+
 
                 // Page requested is higher than the number of pages
                 if (!empty($_GET[$this->qs('paging')]) AND $_GET[$this->qs('paging')] > $paging_numpages) {
 
                     $url = new editor_url($_SERVER['REQUEST_URI']);
                         $url->removequerystringparameter($this->qs('paging'));
-                        $url->addquerystringparameter($this->qs('search'), urlencode($_GET[$this->qs('search')]));
+                        $url->removequerystringparameter($this->qs('search'));
+                        $url->addquerystringparameter($this->qs('search'),$_GET[$this->qs('search')]);
                         $url->setquerystringparameter($this->qs('paging'), $paging_numpages);
                         $url->setanchor($this->id);
                     $u = $url->get();
+
                     editor_redirect($u);
                 }
             }
+
+
 
 
             $paging_start = max(1, $this->options['paging_current'] - 4);
@@ -1152,6 +1162,7 @@
             if ($paging_start < 1) {
                 $paging_start = 1;
             }
+
 
 
             //
@@ -1181,7 +1192,6 @@
             for ($i=0; $i<count($paging_page_numbers_array); ++$i) {
                 $paging_page_numbers_string .= $paging_page_numbers_array[$i][1];
             }
-
 
             //
             // Add the triangle for the previous page
@@ -1750,7 +1760,7 @@ echo '
     You can add a <b>!</b> to the front of a word or a sequence of
     characters to negate it. so a search for <i>john !Barry</i> would
     find rows that contain the word <i>john</i> but not with the word
-    "barry".
+    <i>barry</i>.
 
     <div style="margin-bottom: 10px; margin-top: 10px">
         <b><big style="margin-bottom: 10px">Character classes</big></b><br />
@@ -2150,8 +2160,9 @@ echo '
     
     
         // Create the string that becomes the HTML thats shown in
-        // the Modal Dialog
+        // the Modal Dialog EDIT POPUP WINDOW
         var html = `
+<div class="move-notification"><img src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xml%3Aspace%3D%22preserve%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cpath%20d%3D%22m455.2%20318.4%2056.8-56.8v-11.2l-56.8-56.8-11.2%2011.2%2051.2%2051.2-51.2%2051.2zM56.8%20193.6%200%20250.4v11.2l56.8%2056.8L68%20307.2%2016.8%20256%2068%20204.8z%22%2F%3E%3Cpath%20d%3D%22M5.6%20264.4H216v-16.8H5.6M296%20264.4h210.4v-16.8H296M318.4%2056.8%20261.6%200h-11.2l-56.8%2056.8L204.8%2068%20256%2016.8%20307.2%2068zM193.6%20455.2l56.8%2056.8h11.2l56.8-56.8-11.2-11.2-51.2%2051.2-51.2-51.2z%22%2F%3E%3Cpath%20d%3D%22M264.4%20506.4V296h-16.8v210.4M264.4%20216V5.6h-16.8V216%22%2F%3E%3C%2Fsvg%3E" width="12" height="12" style="position: relative; top: 3px;" /> Double click to move</div>
 <form action="' . (!empty($this->options['editable_save_url']) ? $this->options['editable_save_url'] : $_SERVER['REQUEST_URI'] . '#' . $this->id) . '"  method="post" ' . ($this->editable_types_file ? 'enctype="multipart/form-data"' : '') . '>
 <input type="hidden" name="editor_id" value="${td.getAttribute(\'data-id\')}" />
 ' . (!empty($this->options['editable_save_url']) ? '<input type="hidden" name="editor_database" value="' . $this->database_file . '" />' : '') . '
@@ -3393,6 +3404,7 @@ Are you sure that you want to add a new row?<br />
 
         div#editor-edit-row-popup-container div.file-upload-drag-target {margin-top: 10px; color: gray; text-align: center; background-color: #eee; border-radius: 5px; border: 3px dashed #ccc; padding: 20px;}
         div#editor-edit-row-popup-container div.file-upload-drag-target.editor_dragover {border-color: red; background-color: #fee; color: red;}
+        div#editor-edit-row-popup-dialog div.move-notification {margin: 3px; font-size: 8pt; font-family: Monospace; user-select: none; position: absolute; bottom: 0; right: 0;}
 
         button#editor-addrowmodal-cancel {cursor: pointer; opacity: 0.5; padding: 3px; font-size: 120%;}
         button#editor-addrowmodal-ok {cursor: pointer; color: green; font-weight: bold; padding: 3px; font-size: 120%}
@@ -4147,7 +4159,7 @@ Are you sure that you want to add a new row?<br />
         {
             // Remove repeated ampersands
             $this->url = preg_replace('/&+/','&',$this->url);
-            
+
             // Remove repeated hashes with just 1
             $this->url = preg_replace('/#+/','#',$this->url);
             
@@ -4165,9 +4177,9 @@ Are you sure that you want to add a new row?<br />
             
             // Remove this sequence
             $this->url= preg_replace('/\?#+&+/','?', $this->url);
-            
+
             // Remove trailing empty hases
-            trim($this->url, '#');
+            $this->url = trim($this->url, '#');
         }
 
 
@@ -4178,7 +4190,6 @@ Are you sure that you want to add a new row?<br />
         //
         public function get()
         {
-
             $this->clean();
 
             return $this->url;
